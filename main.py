@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow.lite as tflite
 from gtts import gTTS
 import os
-from playsound import playsound
+from pydub import AudioSegment
 
 # Load the TFLite model and allocate tensors
 interpreter = tflite.Interpreter(model_path="model_unquant.tflite")
@@ -80,10 +80,17 @@ while True:
             # Create and save the audio file
             tts = gTTS(text=command, lang='en')
             tts.save("command.mp3")
-            # Play the audio
-            playsound("command.mp3")
-            # Remove the temporary file
+            
+            # Convert MP3 to WAV
+            audio = AudioSegment.from_mp3("command.mp3")
+            audio.export("command.wav", format="wav")
+            
+            # Play the WAV file using aplay
+            os.system('aplay command.wav')
+            
+            # Clean up temporary files
             os.remove("command.mp3")
+            os.remove("command.wav")
             print("Command successfully spoken")
         except Exception as e:
             print(f"Error with text-to-speech: {e}")
