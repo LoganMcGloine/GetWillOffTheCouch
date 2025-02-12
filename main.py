@@ -1,10 +1,9 @@
 import cv2
 import numpy as np
 import tensorflow.lite as tflite
-import pyttsx3  # For text-to-speech yelling
-
-# Initialize text-to-speech engine
-engine = pyttsx3.init()
+from gtts import gTTS
+import os
+from playsound import playsound
 
 # Load the TFLite model and allocate tensors
 interpreter = tflite.Interpreter(model_path="model_unquant.tflite")
@@ -55,12 +54,42 @@ while True:
     max_index = np.argmax(predictions)
     class_name = class_labels[max_index]
     confidence = predictions[max_index]
-
-    # Check if it's the "Dog on Couch" class
-    if class_name == "Dog on Couch" and confidence > 0.8:
-        print(f"Dog detected on couch! Confidence: {confidence:.2f}")
-        engine.say("Get off the couch!")
-        engine.runAndWait()
+    
+    # Remove any numbers and extra spaces from the class name
+    cleaned_class_name = ' '.join(word for word in class_name.split() if not word.isdigit()).strip()
+    
+    # Debug prints
+    print(f"Selected class: '{class_name}'")
+    print(f"Cleaned class name: '{cleaned_class_name}'")
+    print(f"Checking if '{cleaned_class_name}' == 'dog on couch'")
+    
+    # Check if it's the "dog on couch" class with cleaned string matching
+    if cleaned_class_name == "dog on couch" and confidence > 0.6:
+        print("MATCH FOUND - Attempting to yell")
+        commands = [
+            "Will, get off the couch",
+            "Will, no couch",
+            "Off the couch Will",
+            "Will, down",
+            "No couch buddy"
+        ]
+        command = np.random.choice(commands)
+        print(f"Trying to say: {command}")
+        
+        try:
+            # Create and save the audio file
+            tts = gTTS(text=command, lang='en')
+            tts.save("command.mp3")
+            # Play the audio
+            playsound("command.mp3")
+            # Remove the temporary file
+            os.remove("command.mp3")
+            print("Command successfully spoken")
+        except Exception as e:
+            print(f"Error with text-to-speech: {e}")
+        
+        # Add a small delay to prevent continuous yelling
+        cv2.waitKey(1000)  # Wait for 1 second
 
     # Display the frame (optional)
     cv2.putText(frame, f"{class_name}: {confidence:.2f}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
